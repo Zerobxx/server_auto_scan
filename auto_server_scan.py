@@ -8,26 +8,29 @@ import json
 import logging
 import requests
 import psycopg2
-from multiprocessing import Pool
+from multiprocessing import Pool, Manager
 from encrypt import EncryptJSON
 from keys import server_database_pro, server_database_dev, disable_url, authority
 
 
-hosts_list = []
+# create an empty global list that are shared between different processes
+hosts_list = Manager().list()
 
+# log file config
 logging.basicConfig(filename='scan.log', level=logging.INFO)
 
-# connect database and fetch hosts
+
+# connect database and fetch low traffic hosts
 def get_scan_servers():
     try:
         conn = psycopg2.connect(database=server_database_pro['database'], user=server_database_pro['user'], password=server_database_pro['password'], host=server_database_pro['host'], port=server_database_pro['port'])
         # conn = psycopg2.connect(database=server_database_dev['database'], user=server_database_dev['user'], password=server_database_dev['password'], host=server_database_dev['host'], port=server_database_dev['port'])
         cur = conn.cursor()
-        cur.execute('SELECT "host" FROM node WHERE hour_transfer < 50000')
+        cur.execute('SELECT "host" FROM node WHERE hour_transfer < 50000 AND "enableStatus" = 9')
         rows = cur.fetchall()
         # conn.commit()
-    except Exception:
-        print("select: Connect database error!")
+    except Exception as e:
+        logging.info("Connect database error: " + str(e) + '\n')
     finally:
         cur.close()
         conn.close()
@@ -37,6 +40,7 @@ def get_scan_servers():
 def if_block(ip):
     
     try:
+        #创建socket对象，AF_INET指定使用IPv4协议，SOCK_STREAM指定使用面向流的TCP协议
         sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sk.settimeout(5)
         sk.connect((ip, 22))
@@ -54,23 +58,21 @@ def if_block(ip):
                 skerr.close()  
             if n >= 3:
                 # print(ip)
-                # current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
+                current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
                 # with open('./bloeckedServers', 'a') as f:
                 #     f.write("%25s : %20s\n" % (current_time, ip)) 
-                logging.info('boock ip: ' + ip)
                 hosts_list.append(ip)
+                logging.info('boock ip: ' + ip + ', ' + current_time)
                 break
     finally:
         sk.close()   
 
 
 # construct a json string and inform the backend by put method
-def secret_put(hosts_list, url):
+def secret_put(hosts, url):
 
     # construct a json string 
-    secret_dict = {}
-    secret_dict["hosts"] = hosts_list
-    
+    secret_dict = {'hosts': hosts}
     json_str = json.dumps(secret_dict)
 
     # encrypt the json string
@@ -106,5 +108,8 @@ if __name__ =='__main__':
     
     scan_pool.close()
     scan_pool.join()
-    if len(hosts_list) > 0:
-        secret_put(hosts_list, disable_url)
+    #使用Manager().list()创建的对象是能在各进程间共享的ListProxy对象，但该对象无法直接进行json序列化或迭代，因此需要hosts_list[:]或是copy模块的copy.copy(hosts_list)返回一个常规list再进行接下来的处理
+    hosts = hosts_list[:]
+    print(hosts)
+    if len(hosts) > 0:
+        secret_put(hosts, disable_url)
