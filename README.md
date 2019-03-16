@@ -18,7 +18,8 @@ pip install pycrypto
 
 pip freeze > requirements.txt
 
-
+安装requirements.txt依赖
+pip install -r requirements.txt
 
 一些敏感不同步git文件说明：
 
