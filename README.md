@@ -9,19 +9,29 @@ python3 manual_server_scan.py	#将从前端url界面上显示ip按钮获得的ip
 **环境依赖：**
 
 python 3.5+
+
 ubuntu 16.04
+
 pip:
+
     sudo apt-get install python3-pip
+
     pip3 install --upgrade pip
+
     pip -V
 
 virtualenv:
+
     pip install virtualenv
+
     virtualenv --no-site-packages venv
+
     source venv/bin/activate
 
 pip install requests
+
 pip install psycopg2
+
 pip install pycrypto
 
 
@@ -29,6 +39,7 @@ pip install pycrypto
 使用requirements.txt解决依赖：
 
 pip freeze > requirements.txt
+
 pip install -r requirements.txt
 
 
