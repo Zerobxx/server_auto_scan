@@ -110,6 +110,11 @@ if __name__ =='__main__':
     scan_pool.join()
     #使用Manager().list()创建的对象是能在各进程间共享的ListProxy对象，但该对象无法直接进行json序列化或迭代，因此需要hosts_list[:]或是copy模块的copy.copy(hosts_list)返回一个常规list再进行接下来的处理
     hosts = hosts_list[:]
-    print(hosts)
-    if len(hosts) > 0:
-        secret_put(hosts, disable_url)
+    current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
+    try:
+        if len(hosts) > 0:
+            secret_put(hosts, disable_url)
+    except Exception as e:
+        logging.exception(current_time + ': ' e)    
+    else:
+        print(current_time + '\n' + 'success disable blocked nodes: ' + str(hosts))        
