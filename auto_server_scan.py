@@ -115,6 +115,6 @@ if __name__ =='__main__':
         if len(hosts) > 0:
             secret_put(hosts, disable_url)
     except Exception as e:
-        logging.exception(current_time + ': ' e)    
+        logging.exception(current_time + ': ' + e)    
     else:
         print(current_time + '\n' + 'success disable blocked nodes: ' + str(hosts))        
